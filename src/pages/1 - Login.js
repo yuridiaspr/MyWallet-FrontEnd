@@ -1,24 +1,73 @@
 import styled from "styled-components";
 import { MainColor } from "../constants/colors";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { URL_signIn } from "../constants/urls";
 
-export default function Login() {
+export default function Login({ auth, setAuth }) {
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  function login(authData) {
+    setAuth(authData);
+    localStorage.setItem("auth", JSON.stringify(authData));
+  }
+
+  useEffect(() => {
+    if (auth && auth.token) {
+      navigate("/menu");
+    }
+  }, []);
+
+  function handleChange(e) {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    setIsLoading(true);
+    const promise = axios.post(URL_signIn, { ...formData });
+    promise.then((response) => {
+      setIsLoading(false);
+      login(response.data);
+      navigate("/menu");
+    });
+    promise.catch((res) => {
+      setIsLoading(false);
+      alert(res.response.data);
+    });
+  }
+
   return (
     <>
       <Container>
         <p>MyWallet</p>
-        <Form>
-          <Input value="E-mail" />
-          <Input value="Senha" />
+        <Form onSubmit={handleSubmit}>
+          <Input
+            type="email"
+            placeholder="E-mail"
+            name="email"
+            onChange={handleChange}
+            value={formData.email}
+            disabled={isLoading}
+            required
+          />
+          <Input
+            type="password"
+            placeholder="Senha"
+            name="password"
+            onChange={handleChange}
+            value={formData.password}
+            disabled={isLoading}
+            required
+          />
           <Button>Entrar</Button>
         </Form>
         <StyledLink to="/register">Primeira vez? Cadastre-se!</StyledLink>
-
-        <StyledLink to="/newprofit">Nova Entrada</StyledLink>
-
-        <StyledLink to="/newexpense">Nova Saida</StyledLink>
-
-        <StyledLink to="/Menu">Menu</StyledLink>
       </Container>
     </>
   );
@@ -71,6 +120,10 @@ const Input = styled.input`
 
   display: flex;
   align-items: center;
+
+  &::placeholder {
+    color: black;
+  }
 `;
 
 const Button = styled.button`

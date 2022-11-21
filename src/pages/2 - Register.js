@@ -1,18 +1,93 @@
 import styled from "styled-components";
 import { MainColor } from "../constants/colors";
 import { Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import React from "react";
+import { URL_signUp } from "../constants/urls";
+import axios from "axios";
 
 export default function Register() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    passwordConfirm: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
+  function handleChange(e) {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    if (formData.password !== formData.passwordConfirm) {
+      return alert("Senhas devem ser iguais!");
+    }
+
+    setIsLoading(true);
+    const promise = axios.post(URL_signUp, {
+      ...formData,
+    });
+
+    promise.then(() => {
+      setIsLoading(false);
+      navigate("/");
+    });
+    promise.catch((res) => {
+      setIsLoading(false);
+      alert(res.response.data);
+    });
+    setIsLoading(false);
+  }
+
   return (
     <>
       <Container>
         <p>MyWallet</p>
-        <Form>
-          <Input value="Nome" />
-          <Input value="E-mail" />
-          <Input value="Senha" />
-          <Input value="Confirme a senha" />
-          <Button>Cadastrar</Button>
+        <Form onSubmit={handleSubmit}>
+          <Input
+            type="text"
+            name="name"
+            onChange={handleChange}
+            value={formData.name}
+            disabled={isLoading}
+            placeholder="Nome"
+            required
+          />
+          <Input
+            type="email"
+            placeholder="E-mail"
+            name="email"
+            onChange={handleChange}
+            value={formData.email}
+            disabled={isLoading}
+            required
+          />
+          <Input
+            type="password"
+            placeholder="Senha"
+            name="password"
+            onChange={handleChange}
+            value={formData.password}
+            disabled={isLoading}
+            required
+          />
+          <Input
+            type="password"
+            placeholder="Confirme a senha"
+            name="passwordConfirm"
+            onChange={handleChange}
+            value={formData.passwordConfirm}
+            disabled={isLoading}
+            required
+          />
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Carregando" : "Cadastrar"}
+          </Button>
         </Form>
         <StyledLink to="/">Já tem uma conta? Entre agora!</StyledLink>
       </Container>
@@ -67,6 +142,10 @@ const Input = styled.input`
 
   display: flex;
   align-items: center;
+
+  &::placeholder {
+    color: black;
+  }
 `;
 
 const Button = styled.button`

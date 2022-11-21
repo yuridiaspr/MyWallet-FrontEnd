@@ -1,20 +1,75 @@
 import styled from "styled-components";
 import { MainColor } from "../constants/colors";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useState, useEffect } from "react";
+import { URL_profit } from "../constants/urls";
 
-export default function NewProfit() {
+export default function NewProfit({ auth }) {
+  const [formData, setFormData] = useState({ value: "", description: "" });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const navigate = useNavigate();
+  const token = auth.token;
+
+  if (!token) {
+    alert("Faça o login!");
+    navigate("/");
+  }
+
+  function handleChange(e) {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    setIsLoading(true);
+    const config = {
+      headers: {
+        authorization: `Bearer ${token}`,
+      },
+    };
+    const promisse = axios.post(URL_profit, { ...formData }, config);
+    promisse.then((response) => {
+      setIsLoading(false);
+      navigate("/menu");
+    });
+    promisse.catch((res) => {
+      setIsLoading(false);
+      alert(res.response.data);
+      navigate("/");
+    });
+  }
+
   return (
     <>
       <Container>
         <div>
           <Info>Nova entrada</Info>
         </div>
-        <Form>
-          <Input value="Valor" />
-          <Input value="Descrição" />
+        <Form onSubmit={handleSubmit}>
+          <Input
+            type="number"
+            placeholder="Valor"
+            name="value"
+            onChange={handleChange}
+            value={formData.value}
+            disabled={isLoading}
+            required
+          />
+          <Input
+            type="text"
+            placeholder="Descrição"
+            name="description"
+            onChange={handleChange}
+            value={formData.description}
+            disabled={isLoading}
+            required
+          />
           <Button>Salvar entrada</Button>
         </Form>
-        <StyledLink to="/">Inicial</StyledLink>
       </Container>
     </>
   );
@@ -75,6 +130,10 @@ const Input = styled.input`
 
   display: flex;
   align-items: center;
+
+  &::placeholder {
+    color: black;
+  }
 `;
 
 const Button = styled.button`

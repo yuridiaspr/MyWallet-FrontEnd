@@ -10,59 +10,95 @@ import {
   ProfitColor,
   ExpenseColor,
 } from "../constants/colors";
+import { useNavigate } from "react-router-dom";
+import { URL_menu } from "../constants/urls";
+import axios from "axios";
+import { useState, useEffect } from "react";
 
-const Empty = false;
+export default function Menu({ auth, setAuth }) {
+  const [allData, setAllData] = useState([]);
+  const [userName, setUserName] = useState("");
 
-const DadosMockados = [
-  {
-    date: "30/11",
-    description: "Almoço mãe aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    value: "39,909",
-    status: "expense",
-  },
-  {
-    date: "15/11",
-    description: "Salário",
-    value: "39,902",
-    status: "profit",
-  },
-  {
-    date: "30/11",
-    description: "Almoço mãe aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    value: "39,9011111",
-    status: "expense",
-  },
-];
+  let token = null;
 
-let TotalBalance = 0;
-if (!Empty) {
-  for (let i = 0; i < DadosMockados.length; i++) {
-    if (DadosMockados[i].status === "profit") {
-      TotalBalance =
-        TotalBalance + parseFloat(DadosMockados[i].value.replace(/,/g, "."));
-    } else {
-      TotalBalance =
-        TotalBalance - parseFloat(DadosMockados[i].value.replace(/,/g, "."));
+  if (auth.token) {
+    token = auth.token;
+  } else {
+    alert("Você precisa logar!");
+    navigate("/");
+  }
+
+  const config = {
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
+  };
+
+  useEffect(() => {
+    const promisse = axios.get(URL_menu, config);
+
+    promisse.then((res) => {
+      setAllData(res.data[0]);
+      setUserName(res.data[1]);
+    });
+    promisse.catch((res) => {
+      alert(res.response.data);
+      navigate("/");
+    });
+  }, []);
+
+  let isEmpty = allData.length;
+
+  let TotalBalance = 0;
+  if (isEmpty !== 0) {
+    for (let i = 0; i < allData.length; i++) {
+      if (allData[i].status === "profit") {
+        TotalBalance =
+          TotalBalance + parseFloat(allData[i].value.replace(/,/g, "."));
+      } else {
+        TotalBalance =
+          TotalBalance - parseFloat(allData[i].value.replace(/,/g, "."));
+      }
     }
   }
-}
 
-export default function Menu() {
+  const navigate = useNavigate();
+
+  function signOut() {
+    const promisse = axios.delete(URL_menu, config);
+    promisse.then(() => {
+      localStorage.removeItem("auth");
+      setAuth(null);
+      navigate("/");
+    });
+    promisse.catch((res) => {
+      alert(res.response.data);
+      navigate("/");
+    });
+  }
+
+  function addProfit() {
+    navigate("/newprofit");
+  }
+
+  function addExpense() {
+    navigate("/newexpense");
+  }
   return (
     <>
       <Container>
         <ContainerInside>
-          <Info>Olá, Fulano</Info>
-          <img src={Logo_Saida} alt="Logo de saída" />
+          <Info>Olá, {userName}</Info>
+          <img onClick={signOut} src={Logo_Saida} alt="Logo de saída" />
         </ContainerInside>
-        {Empty ? (
+        {isEmpty === 0 ? (
           <BoardEmpty>
             <div> Não há registros de entrada ou saída </div>
           </BoardEmpty>
         ) : (
           <Board>
             <div>
-              {DadosMockados.map((data) => (
+              {allData.map((data) => (
                 <EachItem status={data.status}>
                   <div>
                     <h1>{data.date}</h1>
@@ -83,21 +119,19 @@ export default function Menu() {
           </Board>
         )}
         <ProfitExpense>
-          <Button>
+          <Button onClick={addProfit}>
             <div>
               <img src={Logo_Plus} alt="Logo Plus" />
               <p>Nova entrada</p>
             </div>
           </Button>
-          <Button>
+          <Button onClick={addExpense}>
             <div>
               <img src={Logo_Minus} alt="Logo Minus" />
               <p>Nova Saída</p>
             </div>
           </Button>
         </ProfitExpense>
-
-        <StyledLink to="/">Inicial</StyledLink>
       </Container>
     </>
   );
@@ -177,7 +211,7 @@ const Board = styled.div`
   overflow-y: scroll;
 
   div {
-    max-width: 90%;
+    width: 90%;
   }
 `;
 
@@ -187,8 +221,7 @@ const EachItem = styled.div`
   div {
     display: flex;
     align-items: center;
-    width: 100%;
-
+    width: 95%;
     div {
       display: flex;
       justify-content: space-between;
